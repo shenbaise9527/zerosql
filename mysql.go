@@ -10,7 +10,7 @@ const (
 	duplicateEntryCode uint16 = 1062
 )
 
-// NewZeroMysql 利用gorm来适配go-zero的sqlx.
+// NewZeroMysql use gorm to bridge go-zero.
 func NewZeroMysql(datasource string, opts ...ZeroSqlOption) sqlx.SqlConn {
 	opts = append(opts, withMysqlAcceptable())
 	return NewZeroSqlConn(mysqlDriverName, datasource, opts...)
