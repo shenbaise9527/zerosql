@@ -90,7 +90,7 @@ func newDBConnection(driverName, datasource string) (*gorm.DB, error) {
 	conn.SetMaxOpenConns(maxOpenConns)
 	conn.SetConnMaxLifetime(maxLifetime)
 
-	db, err := gorm.Open(mysql.New(mysql.Config{Conn: conn}), &gorm.Config{})
+	db, err := gorm.Open(mysql.New(mysql.Config{Conn: conn}), &gorm.Config{Logger: NewLogger()})
 
 	return db, err
 }
