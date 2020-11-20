@@ -1,10 +1,8 @@
 package zerosql
 
 import (
-	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/tal-tech/go-zero/core/logx"
@@ -19,19 +17,10 @@ type zeroStmt struct {
 	query string
 }
 
-func (s *zeroStmt) getStmt() (*gorm.PreparedStmtDB, error) {
+func (s *zeroStmt) Close() error {
 	stmtManager, ok := s.db.ConnPool.(*gorm.PreparedStmtDB)
 	if !ok {
-		return nil, errors.New("sql: should assign PreparedStatement Manager back to database when using PrepareStmt mode")
-	}
-
-	return stmtManager, nil
-}
-
-func (s *zeroStmt) Close() error {
-	stmtManager, err := s.getStmt()
-	if err != nil {
-		return err
+		return errors.New("sql: should assign PreparedStatement Manager back to database when using PrepareStmt mode")
 	}
 
 	stmtManager.Close()
@@ -39,48 +28,11 @@ func (s *zeroStmt) Close() error {
 }
 
 func (s *zeroStmt) Exec(args ...interface{}) (sql.Result, error) {
-	stmtManager, err := s.getStmt()
-	if err != nil {
-		return nil, err
-	}
-
-	stmt := fmt.Sprint(args...)
-	startTime := timex.Now()
-	result, err := stmtManager.ExecContext(context.Background(), s.query, args...)
-	duration := timex.Since(startTime)
-	if duration > slowThreshold {
-		logx.WithDuration(duration).Slowf("[SQL] execStmt: slowcall - %s", stmt)
-	} else {
-		logx.WithDuration(duration).Infof("sql execStmt: %s", stmt)
-	}
-	if err != nil {
-		logSqlError(stmt, err)
-	}
-
-	return result, err
+	return exec(s.db, s.query, args...)
 }
 
 func (s *zeroStmt) QueryRow(v interface{}, args ...interface{}) error {
-	stmtManager, err := s.getStmt()
-	if err != nil {
-		return err
-	}
-
-	stmt := fmt.Sprint(args...)
-	startTime := timex.Now()
-	row := stmtManager.QueryRowContext(context.Background(), s.query, args...)
-	err = row.Scan(v)
-	duration := timex.Since(startTime)
-	if duration > slowThreshold {
-		logx.WithDuration(duration).Slowf("[SQL] queryStmt: slowcall - %s", stmt)
-	} else {
-		logx.WithDuration(duration).Infof("sql queryStmt: %s", stmt)
-	}
-	if err != nil {
-		logSqlError(stmt, err)
-	}
-
-	return err
+	return query(s.db, v, s.query, args...)
 }
 
 func (s *zeroStmt) QueryRowPartial(v interface{}, args ...interface{}) error {
@@ -88,26 +40,7 @@ func (s *zeroStmt) QueryRowPartial(v interface{}, args ...interface{}) error {
 }
 
 func (s *zeroStmt) QueryRows(v interface{}, args ...interface{}) error {
-	stmtManager, err := s.getStmt()
-	if err != nil {
-		return err
-	}
-
-	stmt := fmt.Sprint(args...)
-	startTime := timex.Now()
-	rows, err := stmtManager.QueryContext(context.Background(), s.query, args...)
-	duration := timex.Since(startTime)
-	if duration > slowThreshold {
-		logx.WithDuration(duration).Slowf("[SQL] queryStmt: slowcall - %s", stmt)
-	} else {
-		logx.WithDuration(duration).Infof("sql queryStmt: %s", stmt)
-	}
-	if err != nil {
-		logSqlError(stmt, err)
-	}
-
-	defer rows.Close()
-	return s.db.ScanRows(rows, v)
+	return s.QueryRow(v, args...)
 }
 
 func (s *zeroStmt) QueryRowsPartial(v interface{}, args ...interface{}) error {
