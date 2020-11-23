@@ -28,11 +28,6 @@ func (t txSession) Exec(q string, args ...interface{}) (sql.Result, error) {
 
 func (t txSession) Prepare(q string) (sqlx.StmtSession, error) {
 	tx := t.DB.Session(&gorm.Session{PrepareStmt: true})
-	err := tx.Raw(q).Error
-	if err != nil {
-		return nil, err
-	}
-
 	stmt := &zeroStmt{tx, q}
 	return stmt, nil
 }

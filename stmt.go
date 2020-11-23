@@ -1,6 +1,7 @@
 package zerosql
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"time"
@@ -54,9 +55,18 @@ func exec(conn *gorm.DB, q string, args ...interface{}) (sql.Result, error) {
 	}
 
 	startTime := timex.Now()
-	tx := conn.Exec(q, args...)
-	result := &zerosqlResult{0, tx.RowsAffected, tx.Error}
-	err = tx.Error
+	stmtDB, ok := conn.ConnPool.(*gorm.PreparedStmtDB)
+	if !ok {
+		tx := conn.Session(&gorm.Session{PrepareStmt: true})
+		stmtDB, ok = tx.ConnPool.(*gorm.PreparedStmtDB)
+		if !ok {
+			return nil, errors.New("sql: open PreparedStmt failed.")
+		}
+
+		defer stmtDB.Close()
+	}
+
+	result, err := stmtDB.ExecContext(context.Background(), q, args...)
 	duration := timex.Since(startTime)
 	if duration > slowThreshold {
 		logx.WithDuration(duration).Slowf("[SQL] exec: slowcall - %s", stmt)

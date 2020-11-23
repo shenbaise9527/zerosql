@@ -59,12 +59,6 @@ func (db *zerosqlConn) Prepare(query string) (stmt sqlx.StmtSession, err error) 
 		}
 
 		tx := conn.Session(&gorm.Session{PrepareStmt: true})
-		err = tx.Raw(query).Error
-		if err != nil {
-			logInstanceError(db.datasource, err)
-			return err
-		}
-
 		stmt = &zeroStmt{tx, query}
 		return nil
 	}, db.acceptable)
