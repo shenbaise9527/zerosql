@@ -21,7 +21,7 @@ type zeroStmt struct {
 func (s *zeroStmt) Close() error {
 	stmtManager, ok := s.db.ConnPool.(*gorm.PreparedStmtDB)
 	if !ok {
-		return errors.New("sql: should assign PreparedStatement Manager back to database when using PrepareStmt mode")
+		return errors.New("sql: open PreparedStatement Manager failed when using PrepareStmt mode")
 	}
 
 	stmtManager.Close()
@@ -60,7 +60,7 @@ func exec(conn *gorm.DB, q string, args ...interface{}) (sql.Result, error) {
 		tx := conn.Session(&gorm.Session{PrepareStmt: true})
 		stmtDB, ok = tx.ConnPool.(*gorm.PreparedStmtDB)
 		if !ok {
-			return nil, errors.New("sql: open PreparedStmt failed.")
+			return nil, errors.New("sql: open PreparedStatement Manager failed when using PrepareStmt mode")
 		}
 
 		defer stmtDB.Close()
