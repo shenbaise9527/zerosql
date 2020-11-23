@@ -69,7 +69,7 @@ func begin(db *gorm.DB) (trans, error) {
 }
 
 func transact(db *zerosqlConn, b beginnable, fn func(sqlx.Session) error) (err error) {
-	conn, err := getSqlConn(db.driverName, db.datasource)
+	conn, err := getGormSqlConn(getSqlConn(db.driverName, db.datasource))
 	if err != nil {
 		logInstanceError(db.datasource, err)
 		return err

@@ -20,26 +20,8 @@ const (
 var connManager = syncx.NewResourceManager()
 
 type pingedDB struct {
-	*gorm.DB
+	*sql.DB
 	once sync.Once
-}
-
-func (p *pingedDB) Close() error {
-	sqlDB, err := p.DB.DB()
-	if err != nil {
-		return err
-	}
-
-	return sqlDB.Close()
-}
-
-func (p *pingedDB) Ping() error {
-	sqlDB, err := p.DB.DB()
-	if err != nil {
-		return err
-	}
-
-	return sqlDB.Ping()
 }
 
 func getCachedSqlConn(driverName, server string) (*pingedDB, error) {
@@ -60,7 +42,7 @@ func getCachedSqlConn(driverName, server string) (*pingedDB, error) {
 	return val.(*pingedDB), nil
 }
 
-func getSqlConn(driverName, server string) (*gorm.DB, error) {
+func getSqlConn(driverName, server string) (*sql.DB, error) {
 	pdb, err := getCachedSqlConn(driverName, server)
 	if err != nil {
 		return nil, err
@@ -76,7 +58,7 @@ func getSqlConn(driverName, server string) (*gorm.DB, error) {
 	return pdb.DB, nil
 }
 
-func newDBConnection(driverName, datasource string) (*gorm.DB, error) {
+func newDBConnection(driverName, datasource string) (*sql.DB, error) {
 	conn, err := sql.Open(driverName, datasource)
 	if err != nil {
 		return nil, err
@@ -90,9 +72,15 @@ func newDBConnection(driverName, datasource string) (*gorm.DB, error) {
 	conn.SetMaxOpenConns(maxOpenConns)
 	conn.SetConnMaxLifetime(maxLifetime)
 
-	db, err := gorm.Open(
-		mysql.New(mysql.Config{Conn: conn}),
-		&gorm.Config{Logger: NewLogger()})
+	return conn, nil
+}
 
-	return db, err
+func getGormSqlConn(db *sql.DB, err error) (*gorm.DB, error) {
+	if err != nil {
+		return nil, err
+	}
+
+	return gorm.Open(
+		mysql.New(mysql.Config{Conn: db}),
+		&gorm.Config{Logger: NewLogger()})
 }

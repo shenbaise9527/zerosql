@@ -36,7 +36,7 @@ func NewZeroSqlConn(driverName, datasource string, opts ...ZeroSqlOption) sqlx.S
 func (db *zerosqlConn) Exec(query string, args ...interface{}) (result sql.Result, err error) {
 	err = db.brk.DoWithAcceptable(func() error {
 		var conn *gorm.DB
-		conn, err = getSqlConn(db.driverName, db.datasource)
+		conn, err = getGormSqlConn(getSqlConn(db.driverName, db.datasource))
 		if err != nil {
 			logInstanceError(db.datasource, err)
 			return err
@@ -52,7 +52,7 @@ func (db *zerosqlConn) Exec(query string, args ...interface{}) (result sql.Resul
 func (db *zerosqlConn) Prepare(query string) (stmt sqlx.StmtSession, err error) {
 	err = db.brk.DoWithAcceptable(func() error {
 		var conn *gorm.DB
-		conn, err = getSqlConn(db.driverName, db.datasource)
+		conn, err = getGormSqlConn(getSqlConn(db.driverName, db.datasource))
 		if err != nil {
 			logInstanceError(db.datasource, err)
 			return err
@@ -100,7 +100,7 @@ func (db *zerosqlConn) acceptable(err error) bool {
 func (db *zerosqlConn) queryRows(v interface{}, q string, args ...interface{}) error {
 	var qerr error
 	return db.brk.DoWithAcceptable(func() error {
-		conn, err := getSqlConn(db.driverName, db.datasource)
+		conn, err := getGormSqlConn(getSqlConn(db.driverName, db.datasource))
 		if err != nil {
 			logInstanceError(db.datasource, err)
 			return err
